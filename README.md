@@ -1,16 +1,25 @@
-# finsight
+# FinSight 📊
 
-A new Flutter project.
+An AI-powered personal finance and expense tracking application built with Flutter. FinSight helps you track your cashflow, manage debt, and set savings goals, all while automating data entry with a smart receipt scanner.
 
-## Getting Started
+## ✨ Features
 
-This project is a starting point for a Flutter application.
+* **🤖 Smart AI Receipt Scanner:** Snap a picture of a receipt or invoice, and our custom Python backend extracts the merchant, total amount, and date automatically.
+* **🔐 Secure Local Auth:** Protect your financial data with a custom 6-digit PIN and Biometric login (FaceID / Fingerprint).
+* **☁️ Real-time Cloud Sync:** Powered by Supabase for instant database updates and secure user authentication.
+* **🎯 Goals & Commitments:** Track your progress toward savings goals or debt payoffs with the "Smart Sync" engine that automatically logs payments as expenses.
+* **🎨 Dynamic Theming:** Fully supports beautiful Light and Dark modes.
 
-A few resources to get you started if this is your first Flutter project:
+## 🛠️ Tech Stack
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+* **Frontend:** Flutter & Dart
+* **Backend as a Service:** Supabase (Auth, PostgreSQL Database, Storage)
+* **AI API:** Python (FastAPI) & Hugging Face Donut Model
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 🚀 Getting Started
+
+To run this project locally
+
+https://finsight-web-38a6b.web.app
+
+this is totally for web hosting only
