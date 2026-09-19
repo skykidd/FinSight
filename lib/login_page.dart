@@ -21,11 +21,41 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
+  // --- NEW: ANTI-SPAM & LOCKOUT VARIABLES ---
+  bool _isProcessing = false; // Prevents rapid double-clicks
+  int _failedAttempts = 0; // Tracks failed login attempts
+  DateTime? _lockoutTime; // Tracks when the 3-minute timeout expires
+
   // --- STANDARD EMAIL LOGIN ---
   Future<void> _signIn() async {
-    if (!_formKey.currentState!.validate()) return;
+    // 1. CHECK LOCKOUT STATUS FIRST
+    if (_lockoutTime != null) {
+      final remaining = _lockoutTime!.difference(DateTime.now()).inSeconds;
+      if (remaining > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Too many attempts. Try again in $remaining seconds.",
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      } else {
+        // Time has passed, reset the lockout
+        setState(() {
+          _failedAttempts = 0;
+          _lockoutTime = null;
+        });
+      }
+    }
 
+    // 2. PREVENT DOUBLE CLICKS & VALIDATE
+    if (_isProcessing || !_formKey.currentState!.validate()) return;
+
+    _isProcessing = true;
     setState(() => _isLoading = true);
+
     try {
       final response = await Supabase.instance.client.auth.signInWithPassword(
         email: _emailController.text.trim(),
@@ -33,6 +63,9 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (response.user != null && mounted) {
+        // SUCCESS: Reset the failed attempts counter!
+        _failedAttempts = 0;
+
         final data =
             await Supabase.instance.client
                 .from('profiles')
@@ -58,33 +91,50 @@ class _LoginPageState extends State<LoginPage> {
         }
       }
     } on AuthException catch (e) {
-      String message = e.message;
-      if (e.message.contains("Email not confirmed")) {
-        message = "Please check your email to verify your account.";
-      } else if (e.message.contains("Invalid login credentials")) {
-        message = "Wrong email or password. Do you have an account?";
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message), backgroundColor: Colors.red),
-        );
-      }
+      _handleFailedAttempt(e.message);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-        );
-      }
+      _handleFailedAttempt("Error: $e");
+    } finally {
+      // ALWAYS unlock the button when finished
+      _isProcessing = false;
+      if (mounted) setState(() => _isLoading = false);
     }
-    setState(() => _isLoading = false);
   }
 
-  // --- NEW: GOOGLE SIGN IN ---
+  // --- NEW: HELPER TO HANDLE FAILURES & TRIGGER LOCKOUT ---
+  void _handleFailedAttempt(String originalMessage) {
+    _failedAttempts++;
+    String displayMessage = originalMessage;
+
+    // Clean up Supabase's default error messages
+    if (originalMessage.contains("Email not confirmed")) {
+      displayMessage = "Please check your email to verify your account.";
+    } else if (originalMessage.contains("Invalid login credentials")) {
+      displayMessage = "Wrong email or password.";
+    }
+
+    // Trigger Lockout if they hit 5 failures
+    if (_failedAttempts >= 5) {
+      _lockoutTime = DateTime.now().add(const Duration(minutes: 3));
+      displayMessage =
+          "Account temporarily locked for 3 minutes due to too many failed attempts.";
+    } else {
+      // Show them how many tries they have left
+      displayMessage =
+          "$displayMessage (Attempts left: ${5 - _failedAttempts})";
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(displayMessage), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  // --- GOOGLE SIGN IN ---
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
     try {
-      // --- THE DEEP LINK FIX IS RIGHT HERE ---
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo:
@@ -330,7 +380,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 24),
 
-                    // --- NEW: OR DIVIDER ---
+                    // --- OR DIVIDER ---
                     Row(
                       children: [
                         Expanded(
@@ -359,7 +409,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // --- NEW: GOOGLE SIGN IN BUTTON ---
+                    // --- GOOGLE SIGN IN BUTTON ---
                     SizedBox(
                       width: double.infinity,
                       height: 56,

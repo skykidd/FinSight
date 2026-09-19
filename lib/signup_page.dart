@@ -22,10 +22,16 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
 
-  Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return; // Stop if validation fails
+  // --- NEW: ANTI-SPAM VARIABLE ---
+  bool _isProcessing = false; // Prevents rapid double-clicks
 
+  Future<void> _signUp() async {
+    // 1. PREVENT DOUBLE CLICKS & VALIDATE
+    if (_isProcessing || !_formKey.currentState!.validate()) return;
+
+    _isProcessing = true; // Lock the button immediately
     setState(() => _isLoading = true);
+
     try {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
@@ -53,8 +59,11 @@ class _SignUpPageState extends State<SignUpPage> {
           SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
         );
       }
+    } finally {
+      // 2. ALWAYS UNLOCK THE BUTTON WHEN FINISHED
+      _isProcessing = false;
+      if (mounted) setState(() => _isLoading = false);
     }
-    if (mounted) setState(() => _isLoading = false);
   }
 
   @override

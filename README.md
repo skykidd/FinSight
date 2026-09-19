@@ -23,3 +23,6 @@ To run this project locally
 https://finsight-web-38a6b.web.app
 
 this is totally for web hosting only
+
+for android user here the apk to download it
+https://drive.google.com/file/d/15H7m4u8axeoC0i5LEYwY-FcNZ0gzabhi/view?usp=sharing
